@@ -75,8 +75,8 @@ const Calendar = <T extends Record<K, {}>, K extends keyof T>({
   const [rangeRef, setRangeRef] = useState<string>(initialState.dateRef);
 
   const today = moment();
-  const firstMonday = moment(rangeRef).startOf(chooseView).startOf('isoWeek');
-  const lastSunday = moment(rangeRef).endOf(chooseView).endOf('isoWeek');
+  const firstMonday = moment(rangeRef).startOf(chooseView).startOf('week');
+  const lastSunday = moment(rangeRef).endOf(chooseView).endOf('week');
 
   const eventsByDate = groupBy(events, groupProperties.date)
 
@@ -113,7 +113,7 @@ const Calendar = <T extends Record<K, {}>, K extends keyof T>({
         <HStack w='full' maxH={'40px'} gap={0} justify='space-between'>
           <HStack gap={1}>
             <Button colorPalette={colorPalette} size={TOPBAR_BUTTON_SIZES} onClick={() => manipulateDay()}>
-              Oggi
+              Today
             </Button>
             <IconButton size={TOPBAR_BUTTON_SIZES} variant='ghost' onClick={() => manipulateDay('backward')}>
               <FaChevronLeft />
