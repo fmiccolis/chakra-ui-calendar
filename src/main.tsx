@@ -1,3 +1,5 @@
+import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
+import { ColorModeProvider } from './components/ui/color-mode';
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
@@ -5,6 +7,10 @@ import './index.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ChakraProvider value={defaultSystem}>
+      <ColorModeProvider>
+        <App />
+      </ColorModeProvider>
+    </ChakraProvider>
   </StrictMode>,
 )
