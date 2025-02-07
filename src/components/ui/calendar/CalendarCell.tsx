@@ -39,7 +39,7 @@ const CalendarCell = ({ state, date, currentMonth, onDateClick, children }: ICal
       >
         {formattedDate}
       </Button>
-      {children}
+      {!isOutsideMonth && children}
     </GridItem>
   );
 }
