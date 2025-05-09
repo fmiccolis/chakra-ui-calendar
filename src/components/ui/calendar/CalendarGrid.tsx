@@ -1,12 +1,13 @@
-import { AriaCalendarGridProps, useCalendarGrid, useLocale } from "react-aria";
-import { getWeeksInMonth, endOfMonth } from "@internationalized/date";
+import { AriaCalendarGridProps, useCalendarGrid } from "react-aria";
+import { endOfMonth } from "@internationalized/date";
 import CalendarCell from "./CalendarCell";
-import { Box, GridItem, SimpleGrid } from "@chakra-ui/react";
+import { Box, Text, GridItem, SimpleGrid } from "@chakra-ui/react";
 import { ICalendarGrid } from "./types";
 import WeekCell from "./WeekCell";
+import { useRef } from "react";
 
-const CalendarGrid = <T,>({ state, events, maxEventsToShow, renderInCell, renderInWeek, onDayClick, view, startHour, totalHours }: ICalendarGrid<T>) => {
-  let { locale } = useLocale();
+const CalendarGrid = <T,>({ state, events, renderInCell, renderInWeek, onDayClick, view, startHour, totalHours }: ICalendarGrid<T>) => {
+  let cellRefs = useRef<HTMLDivElement[]>([]);
   let startDate = state.visibleRange.start.copy()
   let endDate = endOfMonth(startDate);
   let props: AriaCalendarGridProps = view === 'weeks' ? {} : { 
@@ -15,20 +16,17 @@ const CalendarGrid = <T,>({ state, events, maxEventsToShow, renderInCell, render
   }
   let { gridProps, headerProps, weekDays } = useCalendarGrid({...props, weekdayStyle: 'short'}, state);
 
-  // Get the number of weeks in the month so we can render the proper number of rows.
-  let weeksInMonth = view === 'weeks' ? 1 : getWeeksInMonth(state.visibleRange.start, locale);
-
   return (
     <Box {...gridProps}>
       <SimpleGrid {...headerProps} columns={7}>
         {weekDays.map((day, index) => (
           <GridItem key={index} textAlign={'center'} textTransform={'uppercase'} fontWeight={'bold'}>
-            {day}
+            <Text fontSize={['2xs', 'xs', 'xs', 'sm']}>{day}</Text>
           </GridItem>
         ))}
       </SimpleGrid>
       <SimpleGrid columns={1}>
-        {[...new Array(weeksInMonth).keys()].map((weekIndex) => (
+        {[...new Array(view === 'weeks' ? 1 : 6).keys()].map((weekIndex) => (
           <SimpleGrid key={weekIndex} columns={7} autoRows={"1fr"}>
             {state
               .getDatesInWeek(weekIndex, view === 'weeks' ? undefined : startDate)
@@ -37,16 +35,6 @@ const CalendarGrid = <T,>({ state, events, maxEventsToShow, renderInCell, render
 
                 const dateString = date.toString()
                 const thisDayEvents = events[dateString];
-                let toShow: T[] = [];
-                let excluded: T[] = [];
-                if(thisDayEvents) {
-                  toShow = [...thisDayEvents]
-                  const totalEvents = toShow.length;
-                  if(totalEvents > maxEventsToShow) {
-                    const toRemove = totalEvents - maxEventsToShow + 1;
-                    excluded = toShow.splice(-toRemove, toRemove)
-                  }
-                }
 
                 if(view === 'weeks') {
                   return (
@@ -66,6 +54,10 @@ const CalendarGrid = <T,>({ state, events, maxEventsToShow, renderInCell, render
 
                 return (
                   <CalendarCell
+                    ref={cellRef => {
+                      if(cellRef)
+                      cellRefs.current[i] = cellRef
+                    }}
                     key={i}
                     state={state}
                     date={date}
@@ -73,7 +65,7 @@ const CalendarGrid = <T,>({ state, events, maxEventsToShow, renderInCell, render
                     currentMonth={startDate}
                     onDateClick={onDayClick}
                   >
-                    {renderInCell(date, toShow, excluded)}
+                    {renderInCell(date, cellRefs.current[i], thisDayEvents)}
                   </CalendarCell>
                 )
               }

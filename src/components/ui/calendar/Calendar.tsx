@@ -1,20 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useCalendarState } from "react-stately";
 import { AriaCalendarProps, I18nProvider, useCalendar, useDateFormatter, useLocale } from "react-aria";
-import { CalendarDate, CalendarDateTime, createCalendar, DateValue, now, today, ZonedDateTime, getLocalTimeZone } from "@internationalized/date";
+import { CalendarDate, createCalendar, today, getLocalTimeZone } from "@internationalized/date";
 import CalendarGrid from "./CalendarGrid";
 import { Box, Button, ConditionalValue, createListCollection, HStack, IconButton, Show, Text } from "@chakra-ui/react";
 import { FaChevronRight, FaChevronLeft } from "react-icons/fa6";
 import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValueText } from "../select";
 import CalendarButton from "./CalendarButton";
-import { CalendarView, ICalendarProps } from "./types";
+import { ICalendarProps } from "./types";
 import { groupBy } from "./utils";
 
 const TOPBAR_BUTTON_SIZES: ConditionalValue<"sm" | "md" | "lg" | "xl" | "2xl" | "2xs" | "xs" | undefined> = ['xs', 'sm', 'sm', 'md'];
 
 const Calendar = <T extends Record<K, {}>, K extends keyof T>({
   hoursToShow = [0, 24],
-  initialState = {view: 'months', dateRef: now(getLocalTimeZone())},
+  view = 'months',
+  onViewChange = (_nv) => {},
+  dateRef = today(getLocalTimeZone()),
+  onDateRefChange = (_ndr) => {},
   canChangeView = true,
   showActionBar = true,
   colorPalette = 'gray',
@@ -22,25 +25,22 @@ const Calendar = <T extends Record<K, {}>, K extends keyof T>({
   groupProperties,
   onDayClick = (_day, _minute) => {},
   onRangeChange = (_start, _end) => {},
-  maxEventsToShow = 3,
-  renderInCell = (_d, _s, _e) => <></>,
+  renderInCell = (_d, _e, _s) => <></>,
   renderInWeek = (_d, _s) => <></>
 }: ICalendarProps<T, K>) => {
   let calendarRef = useRef();
   let { locale } = useLocale();
 
-  const [chooseView, setChooseView] = useState<CalendarView>(initialState.view);
-  const [rangeRef, setRangeRef] = useState<DateValue>(initialState.dateRef);
-
   const eventsByDate = groupBy(events, groupProperties.date)
   const [startHour, endHour] = hoursToShow
   const totalHours = endHour - startHour;
 
-  const props: AriaCalendarProps<CalendarDate | CalendarDateTime | ZonedDateTime> = { 
-    value: rangeRef, 
-    onChange: setRangeRef
+  const props: AriaCalendarProps<CalendarDate> = { 
+    value: dateRef, 
+    onChange: onDateRefChange,
+    focusedValue: dateRef
   }
-  let state = useCalendarState({...props, visibleDuration: { [chooseView]: 1 }, locale, createCalendar });
+  let state = useCalendarState({...props, visibleDuration: { [view]: 1 }, locale, createCalendar });
   let { calendarProps, prevButtonProps, nextButtonProps, title } = useCalendar(props, state);
 
   let startDate = state.visibleRange.start;
@@ -64,33 +64,36 @@ const Calendar = <T extends Record<K, {}>, K extends keyof T>({
       <Show when={showActionBar}>
         <HStack w='full' maxH={'40px'} gap={0} justify='space-between'>
           <HStack gap={1}>
-            <Button size={TOPBAR_BUTTON_SIZES} onClick={() => setRangeRef(today(getLocalTimeZone()))}>
-              Today
+            <Button size={TOPBAR_BUTTON_SIZES} onClick={() => onDateRefChange(today(getLocalTimeZone()))}>
+              Oggi
             </Button>
-            <CalendarButton {...prevButtonProps}>
+            <CalendarButton {...prevButtonProps} onPress={() => onDateRefChange(dateRef.subtract({[view]: 1}).copy())}>
               <IconButton size={TOPBAR_BUTTON_SIZES} variant='ghost' colorPalette={'gray'}>
                 <FaChevronLeft />
               </IconButton>
             </CalendarButton>
-            <CalendarButton {...nextButtonProps}>
-              <IconButton size={TOPBAR_BUTTON_SIZES}  variant='ghost' colorPalette={'gray'}>
+            <CalendarButton {...nextButtonProps} onPress={() => onDateRefChange(dateRef.add({[view]: 1}).copy())}>
+              <IconButton size={TOPBAR_BUTTON_SIZES} variant='ghost' colorPalette={'gray'}>
                 <FaChevronRight />
               </IconButton>
             </CalendarButton>
             <Text fontSize={TOPBAR_BUTTON_SIZES} textTransform='capitalize'>
-              {chooseView === 'weeks' ? dateFormatter.formatRange(
+              {view === 'weeks' ? dateFormatter.formatRange(
                 state.visibleRange.start.toDate(state.timeZone),
                 state.visibleRange.end.toDate(state.timeZone)
               ) : title}
             </Text>
           </HStack>
           <Show when={canChangeView}>
-            <SelectRoot 
-              collection={visualization} 
+            <SelectRoot
+              collection={visualization}
               maxW={['100px', '150px', '200px']}
-              size={["xs", "sm", "md"]} 
-              value={[chooseView]}
-              onValueChange={({value}) => setChooseView(value[0] as 'weeks' | 'months')}
+              size={["xs", "sm", "md"]}
+              value={[view]}
+              onValueChange={({value}) => {
+                if(value[0] === 'months') setTimeout(() => onDateRefChange(today(getLocalTimeZone())), 50)
+                onViewChange(value[0] as 'weeks' | 'months')
+              }}
               positioning={{}}
             >
               <SelectTrigger>
@@ -111,11 +114,10 @@ const Calendar = <T extends Record<K, {}>, K extends keyof T>({
         <CalendarGrid 
           state={state} 
           events={eventsByDate} 
-          maxEventsToShow={maxEventsToShow}
           renderInCell={renderInCell}
           renderInWeek={renderInWeek}
           onDayClick={onDayClick}
-          view={chooseView}
+          view={view}
           startHour={startHour}
           totalHours={totalHours}
         />
@@ -134,8 +136,8 @@ const CalendarWrapper = <T extends Record<K, {}>, K extends keyof T>({locale, ..
 
 const visualization = createListCollection({
   items: [
-    { label: "Week",  value: "weeks" },
-    { label: "Month", value: "months" }
+    { label: "Settimana", value: "weeks"  },
+    { label: "Mese",      value: "months" }
   ],
 })
 

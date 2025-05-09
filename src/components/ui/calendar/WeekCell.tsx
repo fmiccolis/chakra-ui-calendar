@@ -52,12 +52,11 @@ const WeekCell = ({ state, date, onDateClick, children, weekDayIndex, startHour 
                 <Show when={weekDayIndex === 0}>
                   <Text
                     color={'gray.solid'} 
-                    fontSize={['xx-small', 'xx-small', 'xx-small', 'xs', 'sm']}
+                    fontSize={'xx-small'}
                     textOverflow={'clip'} 
                     whiteSpace={'nowrap'} 
                     overflow={'hidden'}
-                    opacity={[0.2, 0.5, 0.7, 1]}
-                    smDown={{  width: "100%" }}
+                    opacity={0.7}
                   >
                     {convert(startTime)}
                   </Text>

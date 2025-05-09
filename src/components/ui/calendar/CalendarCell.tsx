@@ -1,10 +1,10 @@
-import { useRef } from "react";
+import { forwardRef, useRef } from "react";
 import { useCalendarCell } from "react-aria";
 import { isSameMonth } from "@internationalized/date";
-import { Button, GridItem } from "@chakra-ui/react";
+import { Box, Button, GridItem, VStack } from "@chakra-ui/react";
 import { ICalendarCell } from "./types";
 
-const CalendarCell = ({ state, date, currentMonth, onDateClick, children }: ICalendarCell) => {
+const CalendarCell = forwardRef<HTMLDivElement, ICalendarCell>(({ state, date, currentMonth, onDateClick, children }, cellRef) => {
   let ref = useRef<HTMLButtonElement | null>(null);
   let {
     cellProps,
@@ -19,29 +19,36 @@ const CalendarCell = ({ state, date, currentMonth, onDateClick, children }: ICal
   return (
     <GridItem 
       {...cellProps} 
-      h='full' w='full' bg={'bg'}
+      h='full' w='full' bg={isOutsideMonth ? 'gray.200' : 'bg'}
       aspectRatio={[0.65, 3/4, 1, 4/3]}
       boxShadow={"0 0 0 .2px var(--chakra-colors-gray-solid)"} 
       margin={"0 0 .2px .2px"}
-      position={'relative'}
+      ref={cellRef}
     >
-      <Button
-        {...buttonProps}
-        position={'absolute'} top={1} right={1}
-        ref={ref}
-        hidden={isOutsideMonth}
-        size={["2xs", "xs"]} p={0}
-        colorScheme={isInvalid ? "red" : "blue"}
-        variant={isSelected ? "solid" : "ghost"}
-        colorPalette={'gray'}
-        onClick={() => onDateClick(date)}
-        onTouchStart={() => onDateClick(date)}
-      >
-        {formattedDate}
-      </Button>
-      {children}
+      <VStack w='full' h='full' gap={0.5}>
+        <Box w='full' p={0.5} display='flex' justifyContent='center'>
+          <Button
+            {...buttonProps}
+            ref={ref}
+            minH='15px' minW='15px' h='unset' w={['15%', '20%']} aspectRatio={1}
+            p={0}
+            fontSize={['10px', '2xs', 'xs']}
+            hidden={isOutsideMonth}
+            colorScheme={isInvalid ? "red" : "blue"}
+            variant={isSelected ? "solid" : "ghost"}
+            colorPalette={'gray'}
+            onClick={() => onDateClick(date)}
+            onTouchStart={() => onDateClick(date)}
+          >
+            {formattedDate}
+          </Button>
+        </Box>
+        <Box w='full' flexGrow={1}>
+          {!isOutsideMonth && children}
+        </Box>
+      </VStack>
     </GridItem>
   );
-}
+});
 
 export default CalendarCell;

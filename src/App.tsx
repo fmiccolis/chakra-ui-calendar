@@ -2,20 +2,23 @@ import { Badge, Box, Button, For, GridItem, SimpleGrid, Text, VStack } from '@ch
 import { useState } from 'react'
 import Calendar from './components/ui/calendar/Calendar'
 import { DialogContent, DialogRoot, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogBody, DialogCloseTrigger, DialogActionTrigger } from './components/ui/dialog';
-import { parseDate } from "@internationalized/date";
+import { CalendarDate, getLocalTimeZone, parseDate, today } from "@internationalized/date";
+import { CalendarView } from './components/ui/calendar/types';
 
 const ONE_HOUR = 60;
 
 function App() {
-	const [dateRef, setDateRef] = useState<string>('2025-03-01');
+  const [view, setView] = useState<CalendarView>('months')
+	const [dateRef, setDateRef] = useState<CalendarDate>(today(getLocalTimeZone()));
 	const [timeRef, setTimeRef] = useState<number>();
   const [events, setEvents] = useState<Event[]>(initialEvents)
 
   const [dialogOpen, setDialogOpen] = useState<boolean>();
   const [selectedEvent, setSelectedEvent] = useState<Event>();
 
-  const addEvent = () => {
-    setEvents(old => [...old, {id: 7, description: "seventhEvent", date: "2025-03-09", start_time: 720, end_time: 780}])
+  const addEvent = (clickedDate: string, start_time?: number) => {
+    setEvents(old => [...old, {id: 7, description: "gibberish", date: clickedDate, start_time: start_time || 720, end_time: start_time ? start_time + 60 : 780}])
+    setDialogOpen(false)
   }
 
   const hoursToShow = [7, 24]
@@ -26,17 +29,21 @@ function App() {
         locale='it'
         hoursToShow={[7, 24]}
         colorPalette={'green'}
-        maxEventsToShow={3}
         events={events}
+        view={view}
+        onViewChange={setView}
+        dateRef={dateRef}
+        onDateRefChange={setDateRef}
         groupProperties={{ date: "date", time: "start_time" }}
         onDayClick={(day, time) => {
           setDialogOpen(true)
-          setDateRef(day.toString())
+          setDateRef(day)
           setTimeRef(time)
         }}
         onRangeChange={(start, end) => console.log({start: start.toString(), end: end.toString()})}
-        renderInCell={(_date, toShow, excluded) => {
-          if(toShow.length === 0) return
+        renderInCell={(_date, el, toShow) => {
+          if(!el) return
+          if(!toShow) return
 
           return (
           <SimpleGrid gap={1} w='full' h='full' p={1} alignItems={'end'}>
@@ -62,21 +69,6 @@ function App() {
                 </GridItem>
               )}
             </For>
-            {excluded && excluded.length > 0 && (
-              <GridItem display={'flex'}>
-                <Badge
-                  display={'inline-block'}
-                  maxW='90%'
-                  variant='solid'
-                  size='xs'
-                  textOverflow={'ellipsis'} 
-                  whiteSpace={'nowrap'} 
-                  overflow={'hidden'}
-                >
-                  + {excluded.length} events
-                </Badge>
-              </GridItem>
-            )}
           </SimpleGrid>
         )}}
         renderInWeek={(_, events = []) => events.map(item => {
@@ -137,7 +129,7 @@ function App() {
           </DialogHeader>
           <DialogBody>
             <Box>
-              <Text>Date: {dateRef}</Text>
+              <Text>Date: {dateRef.toString()}</Text>
               <Text>Time: {timeRef}</Text>
             </Box>
             {!!selectedEvent && (
@@ -154,7 +146,7 @@ function App() {
             <DialogActionTrigger>
               <Button variant={'outline'}>Cancel</Button>
             </DialogActionTrigger>
-            <Button onClick={addEvent}>Add Fake Event</Button>
+            <Button onClick={() => addEvent(dateRef.toString(), timeRef)}>Add Fake Event</Button>
           </DialogFooter>
         </DialogContent>
       </DialogRoot>
